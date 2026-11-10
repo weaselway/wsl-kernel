@@ -70,6 +70,10 @@ provides build tools only, so it is pinned in `flake.lock` and consumers
 should not override it with `follows`: a nixpkgs update would rebuild every
 tree for nothing. Update it by hand when a tool needs it.
 
+CI builds every tree on pushes to `main` and pushes it with kgcc to
+[weaselway.cachix.org](https://weaselway.cachix.org), so dxgdrm and weaselway
+download them instead of compiling.
+
 ## Adding a kernel release
 
 ```sh

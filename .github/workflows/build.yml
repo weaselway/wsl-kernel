@@ -1,0 +1,68 @@
+# Builds the prepared kernel tree of every release in `kernels` and pushes it,
+# with kgcc, to weaselway.cachix.org, so dxgdrm's and weaselway's builds only
+# download them.
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  releases:
+    runs-on: ubuntu-26.04
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: cachix/install-nix-action@v31.11.1
+
+      - id: list
+        run: echo "matrix=$(nix eval --json .#lib.releases)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: releases
+    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        release: ${{ fromJSON(needs.releases.outputs.matrix) }}
+    name: build (${{ matrix.release }})
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+
+      # The tree is about 2 GB, its build several times that.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+              /usr/local/.ghcup /opt/hostedtoolcache /usr/local/share/boost
+          df -h /
+
+      - uses: cachix/install-nix-action@v31.11.1
+        with:
+          extra_nix_config: |
+            max-jobs = auto
+
+      # Every path the job builds is pushed. Without a token (pull requests
+      # from forks) the cache is only read from.
+      - uses: cachix/cachix-action@v17
+        with:
+          name: weaselway
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          pushFilter: '-debug$'
+
+      - name: Build wsl-kernel-dev-${{ matrix.release }}
+        env:
+          RELEASE: ${{ matrix.release }}
+        run: nix build --print-build-logs --no-link ".#\"wsl-kernel-dev-${RELEASE}\""
