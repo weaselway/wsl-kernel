@@ -22,6 +22,7 @@
       kernels = {
         "6.18.40.1-microsoft-standard-WSL2" = "sha256-YMqq3RzXNPibwzckYboDChp2IrUQYauX7Zc0nE+CgMY=";
         "6.18.54.1-microsoft-standard-WSL2" = "sha256-iN6eWKJV20yGn2TPtLFxA4mI52G0dcO2zEOMJV1lfcs=";
+        "6.18.58.1-microsoft-standard-WSL2" = "sha256-PWAyLZoaCXW7fjiLnAi4nTsHljt3EMPPxZrg89qTXpk=";
       };
 
       kernelConfig = release: ./conf + "/kernel-${release}.conf";
